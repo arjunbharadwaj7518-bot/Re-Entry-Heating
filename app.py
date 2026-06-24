@@ -428,11 +428,10 @@ with tab3:
                 height=28,
             ),
         ))
-        fig_tbl.update_layout(
-            **PLOTLY_LAYOUT,
-            height=60 + 30 * len(param_df_display),
-            margin=dict(l=0, r=0, t=10, b=0),
-        )
+        tbl_layout = {**PLOTLY_LAYOUT,
+                      "height": 60 + 30 * len(param_df_display),
+                      "margin": dict(l=0, r=0, t=10, b=0)}
+        fig_tbl.update_layout(**tbl_layout)
         st.plotly_chart(fig_tbl, use_container_width=True)
 
         st.markdown("#### Entry Angle Sweep — Plots")
