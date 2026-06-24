@@ -385,8 +385,55 @@ with tab3:
         param_df_display = pd.DataFrame([
             {k: v for k, v in s.items() if k != "Vehicle"} for s in param_sums
         ], index=[f"{a}°" for a in param_angles])
-        st.dataframe(param_df_display.style.background_gradient(
-            cmap="coolwarm", axis=0), use_container_width=True)
+
+        # ── Colour-coded table via Plotly (no matplotlib dependency) ──────────
+        numeric_cols = param_df_display.select_dtypes(include="number").columns.tolist()
+
+        # Build per-column colour scaling: low=blue, high=red
+        fill_colors = ["#1a3a5c"] * len(param_df_display)  # header row colour
+        cell_fills  = []
+        for col in param_df_display.columns:
+            if col in numeric_cols:
+                vals    = param_df_display[col].astype(float)
+                lo, hi  = vals.min(), vals.max()
+                rng     = hi - lo if hi != lo else 1.0
+                normed  = (vals - lo) / rng          # 0 → 1
+                # interpolate blue (#313695) → red (#d73027)
+                hex_cols = []
+                for n in normed:
+                    r = int(49  + n * (215 - 49))
+                    g = int(54  + n * (48  - 54))
+                    b = int(149 + n * (39  - 149))
+                    hex_cols.append(f"rgb({r},{g},{b})")
+                cell_fills.append(hex_cols)
+            else:
+                cell_fills.append(["#0d1b2a"] * len(param_df_display))
+
+        fig_tbl = go.Figure(go.Table(
+            header=dict(
+                values=["<b>Angle</b>"] + [f"<b>{c}</b>" for c in param_df_display.columns],
+                fill_color="#1a3a5c",
+                font=dict(color="white", size=11),
+                align="center",
+                line_color="#2e6da4",
+            ),
+            cells=dict(
+                values=[param_df_display.index.tolist()] +
+                       [param_df_display[c].round(3).tolist()
+                        for c in param_df_display.columns],
+                fill_color=["#0d2a45"] + cell_fills,
+                font=dict(color="white", size=11),
+                align="center",
+                line_color="#1e3a5a",
+                height=28,
+            ),
+        ))
+        fig_tbl.update_layout(
+            **PLOTLY_LAYOUT,
+            height=60 + 30 * len(param_df_display),
+            margin=dict(l=0, r=0, t=10, b=0),
+        )
+        st.plotly_chart(fig_tbl, use_container_width=True)
 
         st.markdown("#### Entry Angle Sweep — Plots")
 
